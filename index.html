@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Summarizer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0e0e10;
+            --surface: #18181c;
+            --surface-2: #222228;
+            --border: #2e2e38;
+            --accent: #f97316;
+            --accent-dim: rgba(249, 115, 22, 0.12);
+            --accent-glow: rgba(249, 115, 22, 0.35);
+            --text-primary: #f0ede8;
+            --text-secondary: #8a8690;
+            --text-muted: #4a4855;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Atmospheric background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -200px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 700px;
+            height: 500px;
+            background: radial-gradient(ellipse, rgba(249, 115, 22, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -100px;
+            right: -100px;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(ellipse, rgba(249, 115, 22, 0.04) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .wrapper {
+            width: 100%;
+            max-width: 680px;
+            position: relative;
+            z-index: 1;
+            animation: fadeUp 0.6s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: var(--accent-dim);
+            border: 1px solid rgba(249, 115, 22, 0.2);
+            padding: 5px 12px;
+            border-radius: 999px;
+            margin-bottom: 20px;
+        }
+
+        .badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 8px var(--accent-glow);
+            animation: pulse 2s ease infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            line-height: 1.1;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+            margin-bottom: 12px;
+        }
+
+        h1 span {
+            color: var(--accent);
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 300;
+            letter-spacing: 0.01em;
+        }
+
+        /* Card */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(249,115,22,0.4), transparent);
+        }
+
+        .label {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        textarea {
+            width: 100%;
+            height: 180px;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            font-weight: 300;
+            color: var(--text-primary);
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            line-height: 1.6;
+        }
+
+        textarea::placeholder {
+            color: var(--text-muted);
+        }
+
+        textarea:focus {
+            border-color: rgba(249, 115, 22, 0.5);
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.07);
+        }
+
+        .char-count {
+            text-align: right;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        /* Button */
+        .btn {
+            width: 100%;
+            padding: 14px 24px;
+            background: var(--accent);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.15s, box-shadow 0.15s;
+            margin-top: 20px;
+            letter-spacing: 0.01em;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent);
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 24px var(--accent-glow);
+        }
+
+        .btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-inner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Spinner */
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .btn.loading .spinner { display: block; }
+        .btn.loading .btn-text::after { content: 'Summarizing…'; }
+        .btn:not(.loading) .btn-text::after { content: 'Summarize'; }
+
+        /* Output */
+        .output-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px 32px;
+            display: none;
+            animation: fadeUp 0.4s ease both;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .output-card.visible {
+            display: block;
+        }
+
+        .output-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(249,115,22,0.4), transparent);
+        }
+
+        .output-card.error {
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .output-card.error::before {
+            background: linear-gradient(90deg, transparent, rgba(239,68,68,0.4), transparent);
+        }
+
+        #summary-text {
+            font-size: 15px;
+            line-height: 1.75;
+            color: var(--text-primary);
+            font-weight: 300;
+        }
+
+        .output-card.error #summary-text {
+            color: #f87171;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 28px;
+            font-size: 12px;
+            color: var(--text-muted);
+            letter-spacing: 0.03em;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div class="header">
+            <div class="badge">HuggingFace T5 Model</div>
+            <h1>Text <span>Summarizer</span></h1>
+            <p class="subtitle">Paste any content below and get a concise summary instantly.</p>
+        </div>
+
+        <div class="card">
+            <div class="label">Input</div>
+            <textarea id="dialogue-input" placeholder="Paste your article, dialogue, or any long-form text here…"></textarea>
+            <div class="char-count"><span id="char-num">0</span> characters</div>
+            <button class="btn" id="submit-btn">
+                <div class="btn-inner">
+                    <div class="spinner"></div>
+                    <span class="btn-text"></span>
+                </div>
+            </button>
+        </div>
+
+        <div class="output-card" id="output-card">
+            <div class="label">Summary</div>
+            <p id="summary-text"></p>
+        </div>
+
+        <div class="footer">Developed by Omkar &amp; Ajinkya</div>
+    </div>
+
+    <script>
+        const input = document.getElementById("dialogue-input");
+        const btn = document.getElementById("submit-btn");
+        const charNum = document.getElementById("char-num");
+        const outputCard = document.getElementById("output-card");
+        const summaryText = document.getElementById("summary-text");
+
+        input.addEventListener("input", () => {
+            charNum.textContent = input.value.length;
+        });
+
+        btn.addEventListener("click", async () => {
+            const dialogue = input.value.trim();
+            if (!dialogue) return;
+
+            btn.disabled = true;
+            btn.classList.add("loading");
+            outputCard.classList.remove("visible", "error");
+
+            try {
+                const response = await fetch("/summarize/", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ dialogue }),
+                });
+
+                if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+                const data = await response.json();
+                summaryText.textContent = data.summary || "No summary returned.";
+                outputCard.classList.add("visible");
+            } catch (err) {
+                summaryText.textContent = `Error: ${err.message}`;
+                outputCard.classList.add("visible", "error");
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove("loading");
+            }
+        });
+    </script>
+</body>
+</html>
